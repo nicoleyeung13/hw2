@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Haunted Palm - Teachable Machine Ghost</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- TensorFlow.js and Teachable Machine libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+<body class="haunted-scene">
+  <div class="fog-overlay"></div>
+  <div class="vignette"></div>
+  <div class="lightning-flash" id="lightning"></div>
+
+  <!-- Main Haunted Stage -->
+  <main class="stage">
+    <!-- Header / Status -->
+    <header class="app-header">
+      <h1 class="title">HAUNTED VISIONS</h1>
+      <p class="subtitle">Close your palm to summon the spirit... open your palm to banish it.</p>
+    </header>
+
+    <!-- Ghost Area -->
+    <div class="ghost-chamber" id="ghostChamber">
+      <!-- Particle effects container -->
+      <canvas id="particleCanvas"></canvas>
+      
+      <!-- Ghost Entity -->
+      <div class="ghost-entity" id="ghostEntity" aria-hidden="true">
+        <div class="ghost-aura"></div>
+        <div class="ghost-body">
+          <div class="ghost-head">
+            <div class="ghost-eyes">
+              <span class="eye left-eye"></span>
+              <span class="eye right-eye"></span>
+            </div>
+            <div class="ghost-mouth"></div>
+          </div>
+          <div class="ghost-tail">
+            <div class="wave wave1"></div>
+            <div class="wave wave2"></div>
+            <div class="wave wave3"></div>
+            <div class="wave wave4"></div>
+          </div>
+        </div>
+        <div class="ghost-arms">
+          <div class="arm arm-left"></div>
+          <div class="arm arm-right"></div>
+        </div>
+        <div class="ghost-shadow"></div>
+      </div>
+
+      <div class="state-message" id="stateMessage">
+        <span class="summon-text">Show your hand to the camera...</span>
+      </div>
+    </div>
+
+    <!-- Controls & Webcam Section -->
+    <section class="control-panel">
+      <!-- Teachable Machine Model Configuration -->
+      <div class="card model-config">
+        <div class="card-header">
+          <h2>🔮 Teachable Machine Model</h2>
+          <span class="status-badge" id="modelStatusBadge">Not Loaded</span>
+        </div>
+
+        <div class="input-group">
+          <label for="modelUrlInput">Model Link (from Teachable Machine export):</label>
+          <div class="input-row">
+            <input 
+              type="text" 
+              id="modelUrlInput" 
+              placeholder="https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/"
+              value="https://teachablemachine.withgoogle.com/models/_N-sZIHOD/"
+              spellcheck="false"
+            />
+            <button id="loadModelBtn" class="btn primary-btn">Load Model</button>
+          </div>
+          <p class="helper-text">
+            💡 Export your model from Teachable Machine choosing <strong>"Upload (shareable link)"</strong>, then paste the URL here.
+          </p>
+        </div>
+
+        <!-- Class Mapping Selectors -->
+        <div class="mapping-container" id="mappingContainer" style="display: none;">
+          <div class="mapping-header">
+            <span class="mapping-title">Class Triggers:</span>
+            <button id="swapClassesBtn" class="btn small-btn" title="Swap open and closed triggers">⇄ Swap Triggers</button>
+          </div>
+          <div class="mapping-row">
+            <label for="closedPalmSelect">👻 Trigger Ghost (Palm Closed):</label>
+            <select id="closedPalmSelect"></select>
+          </div>
+          <div class="mapping-row">
+            <label for="openPalmSelect">✨ Dismiss Ghost (Palm Open):</label>
+            <select id="openPalmSelect"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Webcam & Predictions -->
+      <div class="card vision-card">
+        <div class="card-header">
+          <h2>👁️ Vision & Sound</h2>
+          <div class="audio-toggle-wrapper">
+            <button id="audioToggleBtn" class="btn icon-btn" title="Toggle Audio Sound FX">
+              <span id="audioIcon">🔊</span> Spooky Audio: <span id="audioStatusText">Ready</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="vision-grid">
+          <div class="webcam-box">
+            <div id="webcam-container" class="webcam-display">
+              <div class="webcam-placeholder" id="webcamPlaceholder">
+                <span>📷 Camera Offline</span>
+                <button id="startWebcamBtn" class="btn glow-btn">Start Webcam</button>
+              </div>
+            </div>
+            <div class="webcam-controls" id="webcamControls" style="display: none;">
+              <button id="flipCamBtn" class="btn small-btn">Flip / Mirror</button>
+              <button id="stopCamBtn" class="btn small-btn danger-btn">Stop Camera</button>
+            </div>
+          </div>
+
+          <div class="predictions-box">
+            <h3>Live Predictions</h3>
+            <div id="label-container" class="label-container">
+              <div class="empty-labels">Predictions will show when camera and model are running.</div>
+            </div>
+            
+            <div class="detected-state-box">
+              <div class="detected-label">Detected Pose:</div>
+              <div class="detected-value" id="detectedValue">None</div>
+            </div>
+
+            <!-- Simulation / Demo controls in case model isn't uploaded yet -->
+            <div class="simulation-section">
+              <span class="sim-label">Quick Testing:</span>
+              <div class="sim-buttons">
+                <button id="simCloseBtn" class="btn sim-btn">Simulate Closed Palm</button>
+                <button id="simOpenBtn" class="btn sim-btn">Simulate Open Palm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="sound.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
